@@ -21,6 +21,8 @@ package org.apache.zeppelin.file;
 import com.google.gson.Gson;
 import junit.framework.TestCase;
 import static org.junit.Assert.*;
+
+import org.apache.zeppelin.completer.CompletionType;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.junit.Test;
@@ -41,6 +43,27 @@ import java.lang.String;
 public class HDFSFileInterpreterTest extends TestCase {
 
     @Test
+    public void testMaxLength() {
+
+      HDFSFileInterpreter t = new MockHDFSFileInterpreter(new Properties());
+      t.open();
+      InterpreterResult result = t.interpret("ls -l /", null);
+      String lineSeparator = "\n";
+      int fileStatusLength = MockFileSystem.fileStatuses.split(lineSeparator).length;
+      assertEquals(result.message().get(0).getData().split(lineSeparator).length, fileStatusLength);
+      t.close();
+
+      Properties properties = new Properties();
+      final int maxLength = fileStatusLength - 2;
+      properties.setProperty("hdfs.maxlength", String.valueOf(maxLength));
+      HDFSFileInterpreter t1 = new MockHDFSFileInterpreter(properties);
+      t1.open();
+      InterpreterResult result1 = t1.interpret("ls -l /", null);
+      assertEquals(result1.message().get(0).getData().split(lineSeparator).length, maxLength);
+      t1.close();
+    }
+
+    @Test
     public void test() {
       HDFSFileInterpreter t = new MockHDFSFileInterpreter(new Properties());
       t.open();
@@ -53,64 +76,64 @@ public class HDFSFileInterpreterTest extends TestCase {
       // 3. flags and arguments to commands are correctly handled
 
       InterpreterResult result1 = t.interpret("ls -l /", null);
-      assertEquals(result1.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result1.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
       InterpreterResult result2 = t.interpret("ls -l /./user/..", null);
-      assertEquals(result2.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result2.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
-      assertEquals(result1.message(), result2.message());
+      assertEquals(result1.message().get(0).getData(), result2.message().get(0).getData());
 
       // Ensure you can do cd and after that the ls uses current directory correctly
 
       InterpreterResult result3 = t.interpret("cd user", null);
-      assertEquals(result3.type(), InterpreterResult.Type.TEXT);
-      assertEquals(result3.message(), "OK");
+      assertEquals(result3.message().get(0).getType(), InterpreterResult.Type.TEXT);
+      assertEquals(result3.message().get(0).getData(), "OK");
 
       InterpreterResult result4 = t.interpret("ls", null);
-      assertEquals(result4.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result4.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
       InterpreterResult result5 = t.interpret("ls /user", null);
-      assertEquals(result5.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result5.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
-      assertEquals(result4.message(), result5.message());
+      assertEquals(result4.message().get(0).getData(), result5.message().get(0).getData());
 
       // Ensure pwd works correctly
 
       InterpreterResult result6 = t.interpret("pwd", null);
-      assertEquals(result6.type(), InterpreterResult.Type.TEXT);
-      assertEquals(result6.message(), "/user");
+      assertEquals(result6.message().get(0).getType(), InterpreterResult.Type.TEXT);
+      assertEquals(result6.message().get(0).getData(), "/user");
 
       // Move a couple of levels and check we're in the right place
 
       InterpreterResult result7 = t.interpret("cd ../mr-history/done", null);
-      assertEquals(result7.type(), InterpreterResult.Type.TEXT);
-      assertEquals(result7.message(), "OK");
+      assertEquals(result7.message().get(0).getType(), InterpreterResult.Type.TEXT);
+      assertEquals(result7.message().get(0).getData(), "OK");
 
       InterpreterResult result8 = t.interpret("ls -l ", null);
-      assertEquals(result8.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result8.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
       InterpreterResult result9 = t.interpret("ls -l /mr-history/done", null);
-      assertEquals(result9.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result9.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
-      assertEquals(result8.message(), result9.message());
+      assertEquals(result8.message().get(0).getData(), result9.message().get(0).getData());
 
       InterpreterResult result10 = t.interpret("cd ../..", null);
-      assertEquals(result10.type(), InterpreterResult.Type.TEXT);
-      assertEquals(result7.message(), "OK");
+      assertEquals(result10.message().get(0).getType(), InterpreterResult.Type.TEXT);
+      assertEquals(result7.message().get(0).getData(), "OK");
 
       InterpreterResult result11 = t.interpret("ls -l ", null);
-      assertEquals(result11.type(), InterpreterResult.Type.TEXT);
+      assertEquals(result11.message().get(0).getType(), InterpreterResult.Type.TEXT);
 
       // we should be back to first result after all this navigation
-      assertEquals(result1.message(), result11.message());
+      assertEquals(result1.message().get(0).getData(), result11.message().get(0).getData());
 
       // auto completion test
       List expectedResultOne = Arrays.asList(
-        new InterpreterCompletion("ls", "ls"));
+        new InterpreterCompletion("ls", "ls", CompletionType.command.name()));
       List expectedResultTwo = Arrays.asList(
-        new InterpreterCompletion("pwd", "pwd"));
-      List<InterpreterCompletion> resultOne = t.completion("l", 0);
-      List<InterpreterCompletion> resultTwo = t.completion("p", 0);
+        new InterpreterCompletion("pwd", "pwd", CompletionType.command.name()));
+      List<InterpreterCompletion> resultOne = t.completion("l", 0, null);
+      List<InterpreterCompletion> resultTwo = t.completion("p", 0, null);
 
       assertEquals(expectedResultOne, resultOne);
       assertEquals(expectedResultTwo, resultTwo);
@@ -123,17 +146,18 @@ public class HDFSFileInterpreterTest extends TestCase {
    * Store command results from curl against a real file system
    */
   class MockFileSystem {
-    HashMap<String, String> mfs = new HashMap<String, String>();
+    HashMap<String, String> mfs = new HashMap<>();
+    static final String fileStatuses =
+            "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16389,\"group\":\"hadoop\",\"length\":0,\"modificationTime\":1438548219672,\"owner\":\"yarn\",\"pathSuffix\":\"app-logs\",\"permission\":\"777\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
+                    "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16395,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438548030045,\"owner\":\"hdfs\",\"pathSuffix\":\"hdp\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
+                    "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16390,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438547985336,\"owner\":\"mapred\",\"pathSuffix\":\"mapred\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
+                    "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":2,\"fileId\":16392,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438547985346,\"owner\":\"hdfs\",\"pathSuffix\":\"mr-history\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
+                    "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16400,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438548089725,\"owner\":\"hdfs\",\"pathSuffix\":\"system\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
+                    "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16386,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438548150089,\"owner\":\"hdfs\",\"pathSuffix\":\"tmp\",\"permission\":\"777\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
+                    "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16387,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438547921792,\"owner\":\"hdfs\",\"pathSuffix\":\"user\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"}\n";
     void addListStatusData() {
       mfs.put("/?op=LISTSTATUS",
-          "{\"FileStatuses\":{\"FileStatus\":[\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16389,\"group\":\"hadoop\",\"length\":0,\"modificationTime\":1438548219672,\"owner\":\"yarn\",\"pathSuffix\":\"app-logs\",\"permission\":\"777\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16395,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438548030045,\"owner\":\"hdfs\",\"pathSuffix\":\"hdp\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16390,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438547985336,\"owner\":\"mapred\",\"pathSuffix\":\"mapred\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":2,\"fileId\":16392,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438547985346,\"owner\":\"hdfs\",\"pathSuffix\":\"mr-history\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16400,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438548089725,\"owner\":\"hdfs\",\"pathSuffix\":\"system\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16386,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438548150089,\"owner\":\"hdfs\",\"pathSuffix\":\"tmp\",\"permission\":\"777\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"},\n" +
-              "{\"accessTime\":0,\"blockSize\":0,\"childrenNum\":1,\"fileId\":16387,\"group\":\"hdfs\",\"length\":0,\"modificationTime\":1438547921792,\"owner\":\"hdfs\",\"pathSuffix\":\"user\",\"permission\":\"755\",\"replication\":0,\"storagePolicy\":0,\"type\":\"DIRECTORY\"}\n" +
+          "{\"FileStatuses\":{\"FileStatus\":[\n" + fileStatuses +
               "]}}"
       );
       mfs.put("/user?op=LISTSTATUS",
@@ -181,11 +205,15 @@ public class HDFSFileInterpreterTest extends TestCase {
   class MockHDFSCommand extends HDFSCommand {
     MockFileSystem fs = null;
 
-    public MockHDFSCommand(String url, String user, Logger logger) {
-      super(url, user, logger, 1000);
+    public MockHDFSCommand(String url, String user, Logger logger, int maxLength) {
+      super(url, user, logger, maxLength);
       fs = new MockFileSystem();
       fs.addMockData(getFileStatus);
       fs.addMockData(listStatus);
+    }
+
+    public MockHDFSCommand(String url, String user, Logger logger) {
+      this(url, user, logger, 1000);
     }
 
     @Override
@@ -213,7 +241,9 @@ public class HDFSFileInterpreterTest extends TestCase {
     @Override
     public void prepare() {
       // Run commands against mock File System instead of WebHDFS
-      cmd = new MockHDFSCommand("", "", logger);
+      int i = Integer.parseInt(getProperty(HDFS_MAXLENGTH) == null ? "1000"
+              : getProperty(HDFS_MAXLENGTH));
+      cmd = new MockHDFSCommand("", "", logger, i);
       gson = new Gson();
     }
 

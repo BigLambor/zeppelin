@@ -18,7 +18,6 @@ package org.apache.zeppelin.jdbc.security;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.zeppelin.jdbc.SqlCompleter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,24 +38,23 @@ public class JDBCSecurityImpl {
   /***
    * @param properties
    */
-  public static void createSecureConfiguration(Properties properties) {
-    AuthenticationMethod authType = getAuthtype(properties);
-
+  public static void createSecureConfiguration(Properties properties,
+      AuthenticationMethod authType) {
     switch (authType) {
-        case KERBEROS:
-          Configuration conf = new
-              org.apache.hadoop.conf.Configuration();
-          conf.set("hadoop.security.authentication", KERBEROS.toString());
-          UserGroupInformation.setConfiguration(conf);
-          try {
-            UserGroupInformation.loginUserFromKeytab(
-                properties.getProperty("zeppelin.jdbc.principal"),
-                properties.getProperty("zeppelin.jdbc.keytab.location")
-            );
-          } catch (IOException e) {
-            LOGGER.error("Failed to get either keytab location or principal name in the " +
-                "interpreter", e);
-          }
+      case KERBEROS:
+        Configuration conf = new
+            org.apache.hadoop.conf.Configuration();
+        conf.set("hadoop.security.authentication", KERBEROS.toString());
+        UserGroupInformation.setConfiguration(conf);
+        try {
+          UserGroupInformation.loginUserFromKeytab(
+              properties.getProperty("zeppelin.jdbc.principal"),
+              properties.getProperty("zeppelin.jdbc.keytab.location")
+          );
+        } catch (IOException e) {
+          LOGGER.error("Failed to get either keytab location or principal name in the " +
+              "interpreter", e);
+        }
     }
   }
 

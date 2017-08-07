@@ -1,9 +1,22 @@
 ---
 layout: page
-title: "Cassandra Interpreter"
-description: "Cassandra Interpreter"
+title: "Cassandra CQL Interpreter for Apache Zeppelin"
+description: "Apache Cassandra database is the right choice when you need scalability and high availability without compromising performance."
 group: interpreter
 ---
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 {% include JB/setup %}
 
 # Cassandra CQL Interpreter for Apache Zeppelin
@@ -28,9 +41,9 @@ group: interpreter
 In a notebook, to enable the **Cassandra** interpreter, click on the **Gear** icon and select **Cassandra**
 
  <center>
- ![Interpreter Binding](../assets/themes/zeppelin/img/docs-img/cassandra-InterpreterBinding.png)
+ ![Interpreter Binding]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/cassandra-InterpreterBinding.png)
 
- ![Interpreter Selection](../assets/themes/zeppelin/img/docs-img/cassandra-InterpreterSelection.png)
+ ![Interpreter Selection]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/cassandra-InterpreterSelection.png)
  </center>
 
 ## Using the Cassandra Interpreter
@@ -40,7 +53,7 @@ In a paragraph, use **_%cassandra_** to select the **Cassandra** interpreter and
 To access the interactive help, type **HELP;**
 
  <center>
-   ![Interactive Help](../assets/themes/zeppelin/img/docs-img/cassandra-InteractiveHelp.png)
+   ![Interactive Help]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/cassandra-InteractiveHelp.png)
  </center>
 
 ## Interpreter Commands
@@ -299,7 +312,7 @@ The schema objects (cluster, keyspace, table, type, function and aggregate) are 
 There is a drop-down menu on the top left corner to expand objects details. On the top right menu is shown the Icon legend.
 
 <center>
-  ![Describe Schema](../assets/themes/zeppelin/img/docs-img/cassandra-DescribeSchema.png)
+  ![Describe Schema]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/cassandra-DescribeSchema.png)
 </center>
 
 ## Runtime Parameters
@@ -808,12 +821,11 @@ Below are the configuration parameters and their default value.
  If you encounter a bug for this interpreter, please create a **[JIRA]** ticket and ping me on Twitter
  at **[@doanduyhai]**
 
-
 [Cassandra Java Driver]: https://github.com/datastax/java-driver
 [standard CQL syntax]: http://docs.datastax.com/en/cql/3.1/cql/cql_using/use_collections_c.html
 [Tuple CQL syntax]: http://docs.datastax.com/en/cql/3.1/cql/cql_reference/tupleType.html
 [UDT CQL syntax]: http://docs.datastax.com/en/cql/3.1/cql/cql_using/cqlUseUDT.html
-[Zeppelin dynamic form]: http://zeppelin.apache.org/docs/0.6.0-SNAPSHOT/manual/dynamicform.html
-[Interpreter Binding Mode]: http://zeppelin.apache.org/docs/0.6.0-SNAPSHOT/manual/interpreters.html
+[Zeppelin Dynamic Form](../usage/dynamic_form/intro.html)
+[Interpreter Binding Mode](../usage/interpreter/interpreter_binding_mode.html)
 [JIRA]: https://issues.apache.org/jira/browse/ZEPPELIN-382?jql=project%20%3D%20ZEPPELIN
 [@doanduyhai]: https://twitter.com/doanduyhai

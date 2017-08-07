@@ -16,12 +16,8 @@
  */
 package org.apache.zeppelin.helium;
 
-import com.google.gson.Gson;
 import org.apache.thrift.TException;
-import org.apache.zeppelin.interpreter.Interpreter;
-import org.apache.zeppelin.interpreter.InterpreterGroup;
-import org.apache.zeppelin.interpreter.InterpreterInfo;
-import org.apache.zeppelin.interpreter.InterpreterSetting;
+import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.remote.RemoteAngularObjectRegistry;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterProcess;
 import org.apache.zeppelin.interpreter.thrift.RemoteApplicationResult;
@@ -41,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 public class HeliumApplicationFactory implements ApplicationEventListener, NotebookEventListener {
   private final Logger logger = LoggerFactory.getLogger(HeliumApplicationFactory.class);
   private final ExecutorService executor;
-  private final Gson gson = new Gson();
   private Notebook notebook;
   private ApplicationEventListener applicationEventListener;
 
@@ -120,7 +115,7 @@ public class HeliumApplicationFactory implements ApplicationEventListener, Noteb
 
         try {
           appStatusChange(paragraph, appState.getId(), ApplicationState.Status.LOADING);
-          String pkgInfo = gson.toJson(pkg);
+          String pkgInfo = pkg.toJson();
           String appId = appState.getId();
 
           client = intpProcess.getClient();
@@ -337,7 +332,8 @@ public class HeliumApplicationFactory implements ApplicationEventListener, Noteb
   }
 
   @Override
-  public void onOutputAppend(String noteId, String paragraphId, String appId, String output) {
+  public void onOutputAppend(
+      String noteId, String paragraphId, int index, String appId, String output) {
     ApplicationState appToUpdate = getAppState(noteId, paragraphId, appId);
 
     if (appToUpdate != null) {
@@ -347,12 +343,14 @@ public class HeliumApplicationFactory implements ApplicationEventListener, Noteb
     }
 
     if (applicationEventListener != null) {
-      applicationEventListener.onOutputAppend(noteId, paragraphId, appId, output);
+      applicationEventListener.onOutputAppend(noteId, paragraphId, index, appId, output);
     }
   }
 
   @Override
-  public void onOutputUpdated(String noteId, String paragraphId, String appId, String output) {
+  public void onOutputUpdated(
+      String noteId, String paragraphId, int index, String appId,
+      InterpreterResult.Type type, String output) {
     ApplicationState appToUpdate = getAppState(noteId, paragraphId, appId);
 
     if (appToUpdate != null) {
@@ -362,7 +360,7 @@ public class HeliumApplicationFactory implements ApplicationEventListener, Noteb
     }
 
     if (applicationEventListener != null) {
-      applicationEventListener.onOutputUpdated(noteId, paragraphId, appId, output);
+      applicationEventListener.onOutputUpdated(noteId, paragraphId, index, appId, type, output);
     }
   }
 

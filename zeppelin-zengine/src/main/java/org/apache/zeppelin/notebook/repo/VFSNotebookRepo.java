@@ -23,11 +23,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.vfs2.FileContent;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemManager;
@@ -41,20 +44,18 @@ import org.apache.zeppelin.notebook.ApplicationState;
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.NoteInfo;
 import org.apache.zeppelin.notebook.Paragraph;
-import org.apache.zeppelin.notebook.NotebookImportDeserializer;
 import org.apache.zeppelin.scheduler.Job.Status;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.common.collect.Lists;
 
 /**
 *
 */
 public class VFSNotebookRepo implements NotebookRepo {
-  Logger logger = LoggerFactory.getLogger(VFSNotebookRepo.class);
+  private static final Logger LOG = LoggerFactory.getLogger(VFSNotebookRepo.class);
 
   private FileSystemManager fsManager;
   private URI filesystemRoot;
@@ -62,32 +63,35 @@ public class VFSNotebookRepo implements NotebookRepo {
 
   public VFSNotebookRepo(ZeppelinConfiguration conf) throws IOException {
     this.conf = conf;
+    setNotebookDirectory(conf.getNotebookDir());
+  }
 
+  private void setNotebookDirectory(String notebookDirPath) throws IOException {
     try {
-      if (conf.isWindowsPath(conf.getNotebookDir())) {
-        filesystemRoot = new File(conf.getNotebookDir()).toURI();
+      if (conf.isWindowsPath(notebookDirPath)) {
+        filesystemRoot = new File(notebookDirPath).toURI();
       } else {
-        filesystemRoot = new URI(conf.getNotebookDir());
+        filesystemRoot = new URI(notebookDirPath);
       }
     } catch (URISyntaxException e1) {
       throw new IOException(e1);
     }
 
     if (filesystemRoot.getScheme() == null) { // it is local path
-      try {
-        this.filesystemRoot = new URI(new File(
-            conf.getRelativeDir(filesystemRoot.getPath())).getAbsolutePath());
-      } catch (URISyntaxException e) {
-        throw new IOException(e);
-      }
+      File f = new File(conf.getRelativeDir(filesystemRoot.getPath()));
+      this.filesystemRoot = f.toURI();
     }
 
     fsManager = VFS.getManager();
     FileObject file = fsManager.resolveFile(filesystemRoot.getPath());
     if (!file.exists()) {
-      logger.info("Notebook dir doesn't exist, create.");
+      LOG.info("Notebook dir doesn't exist, create on is {}.", file.getName());
       file.createFolder();
     }
+  }
+
+  private String getNotebookDirPath() {
+    return filesystemRoot.getPath().toString();
   }
 
   private String getPath(String path) {
@@ -116,7 +120,7 @@ public class VFSNotebookRepo implements NotebookRepo {
 
     FileObject[] children = rootDir.getChildren();
 
-    List<NoteInfo> infos = new LinkedList<NoteInfo>();
+    List<NoteInfo> infos = new LinkedList<>();
     for (FileObject f : children) {
       String fileName = f.getName().getBaseName();
       if (f.isHidden()
@@ -141,7 +145,7 @@ public class VFSNotebookRepo implements NotebookRepo {
           infos.add(info);
         }
       } catch (Exception e) {
-        logger.error("Can't read note " + f.getName().toString(), e);
+        LOG.error("Can't read note " + f.getName().toString(), e);
       }
     }
 
@@ -157,18 +161,13 @@ public class VFSNotebookRepo implements NotebookRepo {
     if (!noteJson.exists()) {
       throw new IOException(noteJson.getName().toString() + " not found");
     }
-
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.setPrettyPrinting();
-    Gson gson = gsonBuilder.registerTypeAdapter(Date.class, new NotebookImportDeserializer())
-        .create();
-
+    
     FileContent content = noteJson.getContent();
     InputStream ins = content.getInputStream();
     String json = IOUtils.toString(ins, conf.getString(ConfVars.ZEPPELIN_ENCODING));
     ins.close();
 
-    Note note = gson.fromJson(json, Note.class);
+    Note note = Note.fromJson(json);
 //    note.setReplLoader(replLoader);
 //    note.jobListenerFactory = jobListenerFactory;
 
@@ -219,14 +218,11 @@ public class VFSNotebookRepo implements NotebookRepo {
 
   @Override
   public synchronized void save(Note note, AuthenticationInfo subject) throws IOException {
-    GsonBuilder gsonBuilder = new GsonBuilder();
-    gsonBuilder.setPrettyPrinting();
-    Gson gson = gsonBuilder.create();
-    String json = gson.toJson(note);
+    String json = note.toJson();
 
     FileObject rootDir = getRootDir();
 
-    FileObject noteDir = rootDir.resolveFile(note.id(), NameScope.CHILD);
+    FileObject noteDir = rootDir.resolveFile(note.getId(), NameScope.CHILD);
 
     if (!noteDir.exists()) {
       noteDir.createFolder();
@@ -269,18 +265,64 @@ public class VFSNotebookRepo implements NotebookRepo {
   @Override
   public Revision checkpoint(String noteId, String checkpointMsg, AuthenticationInfo subject)
       throws IOException {
-    // Auto-generated method stub
-    return null;
+    // no-op
+    LOG.warn("Checkpoint feature isn't supported in {}", this.getClass().toString());
+    return Revision.EMPTY;
   }
 
   @Override
-  public Note get(String noteId, Revision rev, AuthenticationInfo subject) throws IOException {
-    // Auto-generated method stub
+  public Note get(String noteId, String revId, AuthenticationInfo subject) throws IOException {
+    LOG.warn("Get note revision feature isn't supported in {}", this.getClass().toString());
     return null;
   }
 
   @Override
   public List<Revision> revisionHistory(String noteId, AuthenticationInfo subject) {
+    LOG.warn("Get Note revisions feature isn't supported in {}", this.getClass().toString());
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<NotebookRepoSettingsInfo> getSettings(AuthenticationInfo subject) {
+    NotebookRepoSettingsInfo repoSetting = NotebookRepoSettingsInfo.newInstance();
+    List<NotebookRepoSettingsInfo> settings = Lists.newArrayList();
+
+    repoSetting.name = "Notebook Path";
+    repoSetting.type = NotebookRepoSettingsInfo.Type.INPUT;
+    repoSetting.value = Collections.emptyList();
+    repoSetting.selected = getNotebookDirPath();
+
+    settings.add(repoSetting);
+    return settings;
+  }
+
+  @Override
+  public void updateSettings(Map<String, String> settings, AuthenticationInfo subject) {
+    if (settings == null || settings.isEmpty()) {
+      LOG.error("Cannot update {} with empty settings", this.getClass().getName());
+      return;
+    }
+    String newNotebookDirectotyPath = StringUtils.EMPTY;
+    if (settings.containsKey("Notebook Path")) {
+      newNotebookDirectotyPath = settings.get("Notebook Path");
+    }
+
+    if (StringUtils.isBlank(newNotebookDirectotyPath)) {
+      LOG.error("Notebook path is invalid");
+      return;
+    }
+    LOG.warn("{} will change notebook dir from {} to {}",
+        subject.getUser(), getNotebookDirPath(), newNotebookDirectotyPath);
+    try {
+      setNotebookDirectory(newNotebookDirectotyPath);
+    } catch (IOException e) {
+      LOG.error("Cannot update notebook directory", e);
+    }
+  }
+
+  @Override
+  public Note setNoteRevision(String noteId, String revId, AuthenticationInfo subject)
+      throws IOException {
     // Auto-generated method stub
     return null;
   }

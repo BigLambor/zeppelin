@@ -17,9 +17,7 @@
 
 package org.apache.zeppelin.resource;
 
-import com.google.gson.Gson;
 import org.apache.zeppelin.interpreter.InterpreterGroup;
-import org.apache.zeppelin.interpreter.remote.RemoteInterpreterManagedProcess;
 import org.apache.zeppelin.interpreter.remote.RemoteInterpreterProcess;
 import org.apache.zeppelin.interpreter.thrift.RemoteInterpreterService;
 import org.slf4j.Logger;
@@ -55,10 +53,13 @@ public class ResourcePoolUtils {
         boolean broken = false;
         try {
           client = remoteInterpreterProcess.getClient();
+          if (client == null) {
+            // remote interpreter may not started yet or terminated.
+            continue;
+          }
           List<String> resourceList = client.resourcePoolGetAll();
-          Gson gson = new Gson();
           for (String res : resourceList) {
-            resourceSet.add(gson.fromJson(res, Resource.class));
+            resourceSet.add(Resource.fromJson(res));
           }
         } catch (Exception e) {
           logger.error(e.getMessage(), e);
@@ -105,9 +106,8 @@ public class ResourcePoolUtils {
         try {
           client = remoteInterpreterProcess.getClient();
           List<String> resourceList = client.resourcePoolGetAll();
-          Gson gson = new Gson();
           for (String res : resourceList) {
-            resourceSet.add(gson.fromJson(res, Resource.class));
+            resourceSet.add(Resource.fromJson(res));
           }
 
           if (noteId != null) {

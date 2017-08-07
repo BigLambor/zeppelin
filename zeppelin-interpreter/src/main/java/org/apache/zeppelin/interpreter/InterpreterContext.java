@@ -20,18 +20,19 @@ package org.apache.zeppelin.interpreter;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.zeppelin.annotation.ZeppelinApi;
 import org.apache.zeppelin.display.AngularObjectRegistry;
 import org.apache.zeppelin.user.AuthenticationInfo;
 import org.apache.zeppelin.display.GUI;
+import org.apache.zeppelin.interpreter.remote.RemoteEventClientWrapper;
+import org.apache.zeppelin.interpreter.remote.RemoteEventClient;
+import org.apache.zeppelin.interpreter.remote.RemoteInterpreterEventClient;
 import org.apache.zeppelin.resource.ResourcePool;
 
 /**
  * Interpreter context
  */
 public class InterpreterContext {
-  private static final ThreadLocal<InterpreterContext> threadIC =
-      new ThreadLocal<InterpreterContext>();
+  private static final ThreadLocal<InterpreterContext> threadIC = new ThreadLocal<>();
 
   public final InterpreterOutput out;
 
@@ -48,6 +49,7 @@ public class InterpreterContext {
   }
 
   private final String noteId;
+  private final String replName;
   private final String paragraphTitle;
   private final String paragraphId;
   private final String paragraphText;
@@ -57,9 +59,15 @@ public class InterpreterContext {
   private AngularObjectRegistry angularObjectRegistry;
   private ResourcePool resourcePool;
   private List<InterpreterContextRunner> runners;
+  private String className;
+  private RemoteEventClientWrapper client;
+  private RemoteWorksController remoteWorksController;
+  private final Map<String, Integer> progressMap;
 
+  // visible for testing
   public InterpreterContext(String noteId,
                             String paragraphId,
+                            String replName,
                             String paragraphTitle,
                             String paragraphText,
                             AuthenticationInfo authenticationInfo,
@@ -70,8 +78,28 @@ public class InterpreterContext {
                             List<InterpreterContextRunner> runners,
                             InterpreterOutput out
                             ) {
+    this(noteId, paragraphId, replName, paragraphTitle, paragraphText, authenticationInfo,
+        config, gui, angularObjectRegistry, resourcePool, runners, out, null, null);
+  }
+
+  public InterpreterContext(String noteId,
+                            String paragraphId,
+                            String replName,
+                            String paragraphTitle,
+                            String paragraphText,
+                            AuthenticationInfo authenticationInfo,
+                            Map<String, Object> config,
+                            GUI gui,
+                            AngularObjectRegistry angularObjectRegistry,
+                            ResourcePool resourcePool,
+                            List<InterpreterContextRunner> runners,
+                            InterpreterOutput out,
+                            RemoteWorksController remoteWorksController,
+                            Map<String, Integer> progressMap
+                            ) {
     this.noteId = noteId;
     this.paragraphId = paragraphId;
+    this.replName = replName;
     this.paragraphTitle = paragraphTitle;
     this.paragraphText = paragraphText;
     this.authenticationInfo = authenticationInfo;
@@ -81,11 +109,37 @@ public class InterpreterContext {
     this.resourcePool = resourcePool;
     this.runners = runners;
     this.out = out;
+    this.remoteWorksController = remoteWorksController;
+    this.progressMap = progressMap;
   }
 
+  public InterpreterContext(String noteId,
+                            String paragraphId,
+                            String replName,
+                            String paragraphTitle,
+                            String paragraphText,
+                            AuthenticationInfo authenticationInfo,
+                            Map<String, Object> config,
+                            GUI gui,
+                            AngularObjectRegistry angularObjectRegistry,
+                            ResourcePool resourcePool,
+                            List<InterpreterContextRunner> contextRunners,
+                            InterpreterOutput output,
+                            RemoteWorksController remoteWorksController,
+                            RemoteInterpreterEventClient eventClient,
+                            Map<String, Integer> progressMap) {
+    this(noteId, paragraphId, replName, paragraphTitle, paragraphText, authenticationInfo,
+        config, gui, angularObjectRegistry, resourcePool, contextRunners, output,
+        remoteWorksController, progressMap);
+    this.client = new RemoteEventClient(eventClient);
+  }
 
   public String getNoteId() {
     return noteId;
+  }
+
+  public String getReplName() {
+    return replName;
   }
 
   public String getParagraphId() {
@@ -124,4 +178,39 @@ public class InterpreterContext {
     return runners;
   }
 
+  public String getClassName() {
+    return className;
+  }
+  
+  public void setClassName(String className) {
+    this.className = className;
+  }
+
+  public RemoteEventClientWrapper getClient() {
+    return client;
+  }
+
+  public RemoteWorksController getRemoteWorksController() {
+    return remoteWorksController;
+  }
+
+  public void setRemoteWorksController(RemoteWorksController remoteWorksController) {
+    this.remoteWorksController = remoteWorksController;
+  }
+
+  public InterpreterOutput out() {
+    return out;
+  }
+
+  /**
+   * Set progress of paragraph manually
+   * @param n integer from 0 to 100
+   */
+  public void setProgress(int n) {
+    if (progressMap != null) {
+      n = Math.max(n, 0);
+      n = Math.min(n, 100);
+      progressMap.put(paragraphId, new Integer(n));
+    }
+  }
 }

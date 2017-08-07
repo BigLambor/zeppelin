@@ -1,7 +1,7 @@
 ---
 layout: page
-title: "Tutorial"
-description: "Tutorial is valid for Spark 1.3 and higher"
+title: "Apache Zeppelin Tutorial"
+description: "This tutorial page contains a short walk-through tutorial that uses Apache Spark backend. Please note that this tutorial is valid for Spark 1.3 and higher."
 group: quickstart
 ---
 <!--
@@ -17,11 +17,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
+{% include JB/setup %}
+
 # Zeppelin Tutorial
 
 <div id="toc"></div>
 
-This tutorial walks you through some of the fundamental Zeppelin concepts. We will assume you have already installed Zeppelin. If not, please see [here](../install/install.html) first.
+This tutorial walks you through some of the fundamental Zeppelin concepts. We will assume you have already installed Zeppelin. If not, please see [here](./install.html) first.
 
 Current main backend processing engine of Zeppelin is [Apache Spark](https://spark.apache.org). If you're new to this system, you might want to start by getting an idea of how it processes data to get the most out of Zeppelin.
 

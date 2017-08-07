@@ -1,9 +1,22 @@
 ---
 layout: page
-title: "Scalding Interpreter"
-description: ""
+title: "Scalding Interpreter for Apache Zeppelin"
+description: "Scalding is an open source Scala library for writing MapReduce jobs."
 group: interpreter
 ---
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 {% include JB/setup %}
 
 # Scalding Interpreter for Apache Zeppelin
@@ -24,9 +37,9 @@ In a notebook, to enable the **Scalding** interpreter, click on the **Gear** ico
 
 <center>
 
-![Interpreter Binding](../assets/themes/zeppelin/img/docs-img/scalding-InterpreterBinding.png)
+![Interpreter Binding]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/scalding-InterpreterBinding.png)
 
-![Interpreter Selection](../assets/themes/zeppelin/img/docs-img/scalding-InterpreterSelection.png)
+![Interpreter Selection]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/scalding-InterpreterSelection.png)
 
 </center>
 
@@ -111,7 +124,7 @@ print("%table " + table)
 ```
 
 If you click on the icon for the pie chart, you should be able to see a chart like this:
-![Scalding - Pie - Chart](../assets/themes/zeppelin/img/docs-img/scalding-pie.png)
+![Scalding - Pie - Chart]({{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/scalding-pie.png)
 
 
 ### HDFS mode

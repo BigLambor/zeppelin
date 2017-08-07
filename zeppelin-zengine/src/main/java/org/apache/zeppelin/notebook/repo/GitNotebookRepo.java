@@ -82,7 +82,7 @@ public class GitNotebookRepo extends VFSNotebookRepo {
    */
   @Override
   public Revision checkpoint(String pattern, String commitMessage, AuthenticationInfo subject) {
-    Revision revision = null;
+    Revision revision = Revision.EMPTY;
     try {
       List<DiffEntry> gitDiff = git.diff().call();
       if (!gitDiff.isEmpty()) {
@@ -95,7 +95,7 @@ public class GitNotebookRepo extends VFSNotebookRepo {
         LOG.debug("No changes found {}", pattern);
       }
     } catch (GitAPIException e) {
-      LOG.error("Failed to add+comit {} to Git", pattern, e);
+      LOG.error("Failed to add+commit {} to Git", pattern, e);
     }
     return revision;
   }
@@ -108,7 +108,7 @@ public class GitNotebookRepo extends VFSNotebookRepo {
    * 4. apply stash on top and remove it
    */
   @Override
-  public synchronized Note get(String noteId, Revision rev, AuthenticationInfo subject)
+  public synchronized Note get(String noteId, String revId, AuthenticationInfo subject)
       throws IOException {
     Note note = null;
     RevCommit stash = null;
@@ -123,7 +123,7 @@ public class GitNotebookRepo extends VFSNotebookRepo {
       }
       ObjectId head = git.getRepository().resolve(Constants.HEAD);
       // checkout to target revision
-      git.checkout().setStartPoint(rev.id).addPath(noteId).call();
+      git.checkout().setStartPoint(revId).addPath(noteId).call();
       // get the note
       note = super.get(noteId, subject);
       // checkout back to head
@@ -137,7 +137,7 @@ public class GitNotebookRepo extends VFSNotebookRepo {
             stashes.size());
       }
     } catch (GitAPIException e) {
-      LOG.error("Failed to return note from revision \"{}\"", rev.message, e);
+      LOG.error("Failed to return note from revision \"{}\"", revId, e);
     }
     return note;
   }
@@ -161,6 +161,16 @@ public class GitNotebookRepo extends VFSNotebookRepo {
     return history;
   }
 
+  @Override
+  public Note setNoteRevision(String noteId, String revId, AuthenticationInfo subject)
+      throws IOException {
+    Note revisionNote = get(noteId, revId, subject);
+    if (revisionNote != null) {
+      save(revisionNote, subject);
+    }
+    return revisionNote;
+  }
+  
   @Override
   public void close() {
     git.getRepository().close();

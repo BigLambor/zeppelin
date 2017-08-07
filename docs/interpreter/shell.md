@@ -1,9 +1,22 @@
 ---
 layout: page
-title: "Shell Interpreter"
-description: "Shell Interpreter"
+title: "Shell interpreter for Apache Zeppelin"
+description: "Shell interpreter uses Apache Commons Exec to execute external processes."
 group: interpreter
 ---
+<!--
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 {% include JB/setup %}
 
 # Shell interpreter for Apache Zeppelin
@@ -52,4 +65,15 @@ The following example demonstrates the basic usage of Shell in a Zeppelin notebo
 
 <img src="{{BASE_PATH}}/assets/themes/zeppelin/img/docs-img/shell-example.png" />
 
-If you need further information about **Zeppelin Interpreter Setting** for using Shell interpreter, please read [What is interpreter setting?](../manual/interpreters.html#what-is-interpreter-setting) section first.
+If you need further information about **Zeppelin Interpreter Setting** for using Shell interpreter, 
+please read [What is interpreter setting?](../usage/interpreter/overview.html#what-is-interpreter-setting) section first.
+
+## Kerberos refresh interval
+For changing the default behavior of when to renew Kerberos ticket following changes can be made in `conf/zeppelin-env.sh`.
+
+```bash
+# Change Kerberos refresh interval (default value is 1d). Allowed postfix are ms, s, m, min, h, and d.
+export LAUNCH_KERBEROS_REFRESH_INTERVAL=4h
+# Change kinit number retries (default value is 5), which means if the kinit command fails for 5 retries consecutively it will close the interpreter. 
+export KINIT_FAIL_THRESHOLD=10
+```
